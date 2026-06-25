@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Яка ти зірка? / What's Your Star?</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg1:#0f0c29;--bg2:#302b63;--bg3:#24243e;--purple:#a78bfa;--blue:#60a5fa;--green:#34d399;--amber:#fbbf24;--glass:rgba(255,255,255,0.07);--glass-b:rgba(255,255,255,0.12)}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:linear-gradient(135deg,var(--bg1) 0%,var(--bg2) 50%,var(--bg3) 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem;color:#fff;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;background-image:radial-gradient(1px 1px at 20% 30%,rgba(255,255,255,.4) 0%,transparent 100%),radial-gradient(1px 1px at 80% 10%,rgba(255,255,255,.3) 0%,transparent 100%),radial-gradient(1px 1px at 50% 80%,rgba(255,255,255,.3) 0%,transparent 100%),radial-gradient(2px 2px at 35% 15%,rgba(167,139,250,.5) 0%,transparent 100%),radial-gradient(2px 2px at 65% 55%,rgba(96,165,250,.4) 0%,transparent 100%);z-index:0}
+#app{width:100%;max-width:560px;position:relative;z-index:1}
+.screen{display:none;animation:fadeIn .4s ease}
+.screen.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pop{0%{transform:scale(.8);opacity:0}60%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(167,139,250,.4)}50%{box-shadow:0 0 0 12px rgba(167,139,250,0)}}
+@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+
+/* LANG PICKER */
+.lang-pick{display:flex;gap:12px;justify-content:center;margin-bottom:2rem}
+.lang-btn{padding:10px 28px;border-radius:50px;border:2px solid var(--glass-b);background:var(--glass);color:#fff;font-size:1.1rem;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:.02em}
+.lang-btn:hover{border-color:var(--purple);background:rgba(167,139,250,.15);transform:scale(1.05)}
+
+.intro-wrap{text-align:center;padding:1rem 0}
+.intro-emoji{font-size:4rem;margin-bottom:.75rem;animation:float 3s ease-in-out infinite;display:block}
+.intro-title{font-size:2.2rem;font-weight:800;margin-bottom:.5rem;background:linear-gradient(90deg,#f8c9ff,#a78bfa,#60a5fa,#34d399);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 3s linear infinite}
+.intro-sub{font-size:1rem;color:rgba(255,255,255,.6);line-height:1.7;margin-bottom:2rem}
+.intro-badges{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:2rem}
+.badge{padding:6px 14px;border-radius:999px;font-size:.8rem;border:1px solid var(--glass-b);background:var(--glass);color:rgba(255,255,255,.7)}
+
+.form-card{background:var(--glass);border:1px solid var(--glass-b);border-radius:24px;padding:2rem 1.5rem;margin-bottom:1rem}
+.form-title{font-size:1.1rem;font-weight:600;margin-bottom:1.5rem;text-align:center;color:var(--purple)}
+.field{margin-bottom:1.1rem}
+.field label{font-size:.8rem;color:rgba(255,255,255,.55);margin-bottom:5px;display:block;letter-spacing:.04em}
+.field input{width:100%;padding:11px 14px;background:rgba(255,255,255,.05);border:1px solid var(--glass-b);border-radius:12px;color:#fff;font-size:.95rem;outline:none;transition:border-color .2s,background .2s;-webkit-appearance:none;appearance:none}
+.field input::placeholder{color:rgba(255,255,255,.25)}
+.field input:focus{border-color:var(--purple);background:rgba(167,139,250,.08)}
+.it-options{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.it-opt{padding:10px 12px;border-radius:12px;border:1px solid var(--glass-b);background:var(--glass);cursor:pointer;text-align:center;font-size:.85rem;color:rgba(255,255,255,.7);transition:all .2s}
+.it-opt:hover{border-color:var(--purple);background:rgba(167,139,250,.1)}
+.it-opt.selected{border-color:var(--purple);background:rgba(167,139,250,.2);color:#c4b5fd;font-weight:500}
+.field-error{font-size:.78rem;color:#f87171;margin-top:4px;display:none}
+.field-error.show{display:block}
+
+.btn-primary{width:100%;padding:14px;background:linear-gradient(135deg,var(--purple),var(--blue));border:none;border-radius:50px;font-size:1rem;font-weight:700;color:#fff;cursor:pointer;transition:transform .15s,opacity .15s;letter-spacing:.02em;animation:pulse 2.5s infinite}
+.btn-primary:hover{transform:scale(1.03);opacity:.95}
+.btn-secondary{width:100%;padding:13px;background:var(--glass);border:1px solid var(--glass-b);border-radius:14px;color:rgba(255,255,255,.65);font-size:.95rem;cursor:pointer;transition:background .15s;margin-top:10px}
+.btn-secondary:hover{background:rgba(255,255,255,.12)}
+
+.progress-wrap{margin-bottom:1.25rem}
+.progress-top{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;color:rgba(255,255,255,.4);margin-bottom:8px}
+.progress-dots{display:flex;gap:5px}
+.dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.15);transition:all .3s}
+.dot.done{background:var(--purple)}
+.dot.active{background:#fff;transform:scale(1.3)}
+.progress-bar{height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--blue));border-radius:2px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+
+.q-card{background:var(--glass);border:1px solid var(--glass-b);border-radius:24px;padding:1.75rem 1.5rem;overflow:hidden}
+.q-emoji{font-size:2.5rem;margin-bottom:.75rem;display:block;text-align:center;animation:float 2s ease-in-out infinite}
+.q-text{font-size:1.1rem;font-weight:600;line-height:1.5;margin-bottom:1.5rem;text-align:center}
+.options{display:flex;flex-direction:column;gap:10px}
+.opt-btn{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.05);border:1px solid var(--glass-b);border-radius:16px;cursor:pointer;text-align:left;color:rgba(255,255,255,.85);font-size:.95rem;line-height:1.45;transition:all .2s;position:relative;overflow:hidden;width:100%}
+.opt-btn::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .2s}
+.opt-btn:nth-child(1)::before{background:linear-gradient(135deg,rgba(167,139,250,.15),transparent)}
+.opt-btn:nth-child(2)::before{background:linear-gradient(135deg,rgba(96,165,250,.15),transparent)}
+.opt-btn:hover::before{opacity:1}
+.opt-btn:hover{border-color:rgba(255,255,255,.3);transform:translateY(-2px)}
+.opt-emoji{font-size:1.6rem;flex-shrink:0;position:relative;z-index:1}
+.opt-content{flex:1;position:relative;z-index:1}
+.opt-label{font-size:.7rem;font-weight:700;letter-spacing:.08em;color:rgba(255,255,255,.35);margin-bottom:2px}
+.opt-text{font-size:.9rem}
+.check-icon{display:none;margin-left:auto;font-size:1.2rem;position:relative;z-index:1}
+.answered{pointer-events:none}
+.answered .opt-btn.selected{transform:translateY(-2px)}
+.answered .opt-btn:nth-child(1).selected{border-color:var(--purple);background:rgba(167,139,250,.2)}
+.answered .opt-btn:nth-child(2).selected{border-color:var(--blue);background:rgba(96,165,250,.2)}
+.answered .opt-btn:not(.selected){opacity:.3}
+.answered .opt-btn.selected .check-icon{display:block}
+
+.fun-fact{margin-top:1rem;padding:10px 14px;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.3);border-radius:12px;font-size:.82rem;color:rgba(100,255,180,.9);display:none;animation:fadeIn .3s ease}
+.fun-fact.show{display:block}
+
+.result-card{border-radius:24px;padding:2rem 1.5rem;text-align:center;margin-bottom:1rem;border:1px solid rgba(255,255,255,.15);animation:pop .5s ease}
+.res-big-emoji{font-size:5rem;margin-bottom:.75rem;display:block;animation:float 2.5s ease-in-out infinite}
+.res-title{font-size:1.8rem;font-weight:800;margin-bottom:.5rem}
+.res-badge{display:inline-block;padding:4px 14px;border-radius:999px;font-size:.75rem;font-weight:600;margin-bottom:1rem}
+.res-desc{font-size:.95rem;line-height:1.7;margin-bottom:1.25rem;opacity:.85}
+.res-score{font-size:.8rem;opacity:.45;margin-bottom:1.5rem}
+.courses-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;opacity:.45;margin-bottom:.6rem}
+.courses-list{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.course-tag{padding:5px 12px;border-radius:999px;font-size:.8rem;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.8);background:rgba(255,255,255,.07)}
+.res-creative{background:linear-gradient(135deg,rgba(167,139,250,.25),rgba(192,132,252,.1));border-color:rgba(167,139,250,.5)}
+.res-tech{background:linear-gradient(135deg,rgba(52,211,153,.2),rgba(16,185,129,.08));border-color:rgba(52,211,153,.45)}
+.res-leader{background:linear-gradient(135deg,rgba(96,165,250,.22),rgba(59,130,246,.08));border-color:rgba(96,165,250,.5)}
+.res-universe{background:linear-gradient(135deg,rgba(251,191,36,.22),rgba(245,158,11,.08));border-color:rgba(251,191,36,.45)}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(52,211,153,.9);color:#fff;padding:10px 20px;border-radius:999px;font-size:.9rem;font-weight:500;opacity:0;transition:opacity .3s;pointer-events:none;z-index:100;white-space:nowrap}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="app">
+
+<div id="intro" class="screen active">
+  <div class="intro-wrap">
+    <span class="intro-emoji">🌟</span>
+    <h1 class="intro-title" id="intro-title">Яка ти зірка?</h1>
+    <p class="intro-sub" id="intro-sub">Пройди 7 запитань і дізнайся свій тип зірки.<br>Ми підберемо курси саме для тебе!</p>
+    <div class="intro-badges" id="intro-badges">
+      <span class="badge">✨ 7 запитань</span>
+      <span class="badge">🎯 4 типи зірок</span>
+      <span class="badge">⚡ 2 хвилини</span>
+    </div>
+    <div class="lang-pick">
+      <button class="lang-btn" onclick="setLang('uk')">🇺🇦 Українська</button>
+      <button class="lang-btn" onclick="setLang('en')">🇬🇧 English</button>
+    </div>
+  </div>
+</div>
+
+<div id="form-screen" class="screen">
+  <div class="form-card">
+    <div class="form-title" id="form-title">👤 Спочатку познайомимось!</div>
+    <div class="field">
+      <label id="lbl-name">ПІБ *</label>
+      <input type="text" id="f-name" placeholder="Іваненко Іван Іванович">
+      <div class="field-error" id="err-name">Введи своє ім'я</div>
+    </div>
+    <div class="field">
+      <label id="lbl-city">Звідки ти? (місто / школа) *</label>
+      <input type="text" id="f-city" placeholder="Львів, школа №5">
+      <div class="field-error" id="err-city">Введи місто або школу</div>
+    </div>
+    <div class="field">
+      <label id="lbl-phone">Контактний номер телефону батьків *</label>
+      <input type="tel" id="f-phone" placeholder="+380 XX XXX XX XX">
+      <div class="field-error" id="err-phone">Введи номер телефону батьків</div>
+    </div>
+    <div class="field">
+      <label id="lbl-email">Електронна пошта (батьків або своя) *</label>
+      <input type="email" id="f-email" placeholder="example@gmail.com">
+      <div class="field-error" id="err-email">Введи електронну пошту</div>
+    </div>
+    <div class="field">
+      <label id="lbl-it">Чи хотів би займатись чимось з ІТ? *</label>
+      <div class="it-options" id="it-options">
+        <div class="it-opt" data-val="Так, дуже!" onclick="selectIt(this)">🔥 Так, дуже!</div>
+        <div class="it-opt" data-val="Можливо" onclick="selectIt(this)">🤔 Можливо</div>
+        <div class="it-opt" data-val="Ще не знаю" onclick="selectIt(this)">💭 Ще не знаю</div>
+        <div class="it-opt" data-val="Ні, не моє" onclick="selectIt(this)">🙅 Ні, не моє</div>
+      </div>
+      <div class="field-error" id="err-it">Оберіть один варіант</div>
+    </div>
+  </div>
+  <button class="btn-primary" id="form-btn" onclick="submitForm()">Вперед до гри! 🚀</button>
+</div>
+
+<div id="quiz" class="screen">
+  <div class="progress-wrap">
+    <div class="progress-top">
+      <div class="progress-dots" id="dots"></div>
+      <span id="q-count">1 / 7</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+  </div>
+  <div class="q-card">
+    <span class="q-emoji" id="q-emoji">🤔</span>
+    <div class="q-text" id="q-text"></div>
+    <div class="options" id="options"></div>
+    <div class="fun-fact" id="fun-fact"></div>
+  </div>
+</div>
+
+<div id="result" class="screen">
+  <div class="result-card" id="result-card">
+    <span class="res-big-emoji" id="res-icon"></span>
+    <div class="res-title" id="res-title"></div>
+    <div class="res-badge" id="res-badge"></div>
+    <div class="res-desc" id="res-desc"></div>
+    <div class="res-score" id="res-score"></div>
+    <div class="courses-label" id="courses-label">Рекомендовані курси</div>
+    <div class="courses-list" id="res-courses"></div>
+  </div>
+  <button class="btn-secondary" onclick="copyResult()" id="copy-btn">📋 Скопіювати результат</button>
+  <button class="btn-secondary" onclick="restartGame()" id="restart-btn">↩ Спробувати ще раз</button>
+</div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbwTt4xvb67SJiqCesV6SZELBaOhH3cWIy5Ac9zapZAkMmYme1hqo_EyRsxrl6CEu3B-/exec';
+
+// ── TRANSLATIONS ──────────────────────────────────────────────────────────────
+const T = {
+  uk: {
+    introTitle: 'Яка ти зірка?',
+    introSub: 'Пройди 7 запитань і дізнайся свій тип зірки.<br>Ми підберемо курси саме для тебе!',
+    badges: ['✨ 7 запитань','🎯 4 типи зірок','⚡ 2 хвилини'],
+    formTitle: '👤 Спочатку познайомимось!',
+    lblName: 'ПІБ *', lblCity: 'Звідки ти? (місто / школа) *',
+    lblPhone: 'Контактний номер телефону батьків *',
+    lblEmail: 'Електронна пошта (батьків або своя) *',
+    lblIt: 'Чи хотів би займатись чимось з ІТ? *',
+    phName: 'Іваненко Іван Іванович', phCity: 'Львів, школа №5',
+    phPhone: '+380 XX XXX XX XX', phEmail: 'example@gmail.com',
+    itOpts: ['🔥 Так, дуже!','🤔 Можливо','💭 Ще не знаю','🙅 Ні, не моє'],
+    itVals: ['Так, дуже!','Можливо','Ще не знаю','Ні, не моє'],
+    errName: "Введи своє ім'я", errCity: 'Введи місто або школу',
+    errPhone: 'Введи номер телефону батьків', errEmail: 'Введи електронну пошту',
+    errIt: 'Оберіть один варіант',
+    formBtn: 'Вперед до гри! 🚀',
+    optA: 'ВАРІАНТ А', optB: 'ВАРІАНТ Б',
+    coursesLabel: 'Рекомендовані курси',
+    copyBtn: '📋 Скопіювати результат',
+    restartBtn: '↩ Спробувати ще раз',
+    copied: '✅ Скопійовано!', copyFail: 'Не вдалось скопіювати',
+    scoreText: (a,b) => `Відповідей А: ${a} · Відповідей Б: ${b}`,
+  },
+  en: {
+    introTitle: "What's Your Star?",
+    introSub: 'Answer 7 questions and discover your star type.<br>We will find the perfect courses for you!',
+    badges: ['✨ 7 questions','🎯 4 star types','⚡ 2 minutes'],
+    formTitle: '👤 Let\'s get to know you!',
+    lblName: 'Full name *', lblCity: 'Where are you from? (city / school) *',
+    lblPhone: "Parent's phone number *",
+    lblEmail: "Parent's or your email *",
+    lblIt: 'Would you like to work in IT? *',
+    phName: 'John Smith', phCity: 'Lviv, School #5',
+    phPhone: '+380 XX XXX XX XX', phEmail: 'example@gmail.com',
+    itOpts: ['🔥 Yes, definitely!','🤔 Maybe','💭 Not sure yet','🙅 Not for me'],
+    itVals: ['Yes, definitely!','Maybe','Not sure yet','Not for me'],
+    errName: 'Please enter your name', errCity: 'Please enter your city or school',
+    errPhone: "Please enter parent's phone", errEmail: 'Please enter a valid email',
+    errIt: 'Please choose an option',
+    formBtn: 'Start the game! 🚀',
+    optA: 'OPTION A', optB: 'OPTION B',
+    coursesLabel: 'Recommended courses',
+    copyBtn: '📋 Copy result',
+    restartBtn: '↩ Play again',
+    copied: '✅ Copied!', copyFail: 'Could not copy',
+    scoreText: (a,b) => `Answers A: ${a} · Answers B: ${b}`,
+  }
+};
+
+const questions = {
+  uk: [
+    { emoji:'🎨', text:'Уявляєш: вільний день, нікуди йти не треба. Чим займешся?',
+      a:{emoji:'🖌️',text:'Малюю, майструю, щось створюю руками',fact:'🎨 Ти — творча душа! Художники та дизайнери створюють світ навколо нас.'},
+      b:{emoji:'🔧',text:'Розбираю гаджети або вирішую головоломки',fact:'🔧 Ти — дослідник! Інженери та програмісти будують майбутнє.'}},
+    { emoji:'🦸', text:'Тебе вкусив радіоактивний павук. Яку суперсилу отримав?',
+      a:{emoji:'💬',text:'Читаю думки і розумію людей краще за всіх',fact:'💬 Ти — емпат! Вміння розуміти людей — найцінніша навичка лідера.'},
+      b:{emoji:'⚡',text:'Вирішую будь-яке рівняння за мілісекунду',fact:'⚡ Ти — аналітик! Математичне мислення відкриває двері в IT та науку.'}},
+    { emoji:'📚', text:'Який урок у школі був би твоїм найулюбленішим?',
+      a:{emoji:'🎭',text:'Малювання, музика, театр або мова',fact:'🎭 Ти — митець! Творчі люди змінюють культуру і надихають мільйони.'},
+      b:{emoji:'🔬',text:'Математика, фізика або програмування',fact:'🔬 Ти — вчений! Середня зарплата IT-спеціаліста в Україні — від 3000$/міс.'}},
+    { emoji:'🏆', text:'Ти виграв мільйон. Що створюєш насамперед?',
+      a:{emoji:'📖',text:'Знімаю фільм, пишу книгу або відкриваю галерею',fact:'📖 Ти — оповідач! Найкращі бренди світу побудовані на силі storytelling.'},
+      b:{emoji:'🤖',text:'Розробляю гру, додаток або власний стартап',fact:'🤖 Ти — будівник! Середній вік засновника успішного стартапу — 27 років.'}},
+    { emoji:'🧩', text:'Друг просить допомогти з важкою проблемою. Ти…',
+      a:{emoji:'❤️',text:'Слухаю, відчуваю ситуацію і шукаю нестандартний вихід',fact:'❤️ Ти — лідер серцем! Емоційний інтелект важливіший за IQ у 90% професій.'},
+      b:{emoji:'📊',text:'Аналізую факти, будую план і дію крок за кроком',fact:'📊 Ти — стратег! Системне мислення — суперсила в бізнесі та технологіях.'}},
+    { emoji:'✈️', text:'Тебе відправляють навчатись за кордон. Куди летиш?',
+      a:{emoji:'🎨',text:'Арт-школа в Парижі або театральна академія в Лондоні',fact:'🎨 Ти — глобальний митець! Українські дизайнери працюють у топ-компаніях світу.'},
+      b:{emoji:'💻',text:'STEM-табір у США або MIT в Бостоні',fact:'💻 Ти — майбутній інноватор! 40% засновників Silicon Valley — колишні STEM-студенти.'}},
+    { emoji:'🚀', text:'Уяви свій найкрутіший проєкт за все життя. Він про що?',
+      a:{emoji:'🎬',text:'Вірусне відео, книга-бестселер або великий захід',fact:'🎬 Ти — творець вражень! Контент-мейкери сьогодні заробляють мільйони.'},
+      b:{emoji:'🎮',text:'Популярна гра, корисний сайт або власний робот',fact:'🎮 Ти — технологічний геній! Ринок ігор у 2024 році — понад 200 млрд доларів.'}}
+  ],
+  en: [
+    { emoji:'🎨', text:'Imagine a free day with nothing to do. What do you choose?',
+      a:{emoji:'🖌️',text:'Drawing, crafting, creating something with my hands',fact:'🎨 You are a creative soul! Artists and designers shape the world around us.'},
+      b:{emoji:'🔧',text:'Taking apart gadgets or solving puzzles',fact:'🔧 You are an explorer! Engineers and programmers build the future.'}},
+    { emoji:'🦸', text:'A radioactive spider bit you. What superpower did you get?',
+      a:{emoji:'💬',text:'I can read minds and understand people better than anyone',fact:'💬 You are an empath! Understanding people is the most valuable leadership skill.'},
+      b:{emoji:'⚡',text:'I can solve any equation in milliseconds',fact:'⚡ You are an analyst! Mathematical thinking opens doors to IT and science.'}},
+    { emoji:'📚', text:'What would be your dream school subject?',
+      a:{emoji:'🎭',text:'Art, music, theater or languages',fact:'🎭 You are an artist! Creative people change culture and inspire millions.'},
+      b:{emoji:'🔬',text:'Math, physics or programming',fact:'🔬 You are a scientist! Average IT salary in Ukraine starts at $3000/month.'}},
+    { emoji:'🏆', text:'You won a million. What do you create first?',
+      a:{emoji:'📖',text:'A movie, a bestselling book or an art gallery',fact:'📖 You are a storyteller! The best brands in the world are built on storytelling.'},
+      b:{emoji:'🤖',text:'A game, an app or my own startup',fact:'🤖 You are a builder! The average age of a successful startup founder is 27.'}},
+    { emoji:'🧩', text:'A friend asks for help with a tough problem. You…',
+      a:{emoji:'❤️',text:'Listen, feel the situation and look for a creative solution',fact:'❤️ You lead with your heart! Emotional intelligence matters more than IQ in 90% of careers.'},
+      b:{emoji:'📊',text:'Analyze the facts, build a plan and act step by step',fact:'📊 You are a strategist! Systems thinking is a superpower in business and tech.'}},
+    { emoji:'✈️', text:'You are sent abroad to study. Where do you fly?',
+      a:{emoji:'🎨',text:'Art school in Paris or a theater academy in London',fact:'🎨 You are a global artist! Ukrainian designers work at top companies worldwide.'},
+      b:{emoji:'💻',text:'A STEM camp in the US or MIT in Boston',fact:'💻 You are a future innovator! 40% of Silicon Valley founders were once STEM students.'}},
+    { emoji:'🚀', text:'Imagine your greatest project ever. What is it about?',
+      a:{emoji:'🎬',text:'A viral video, a bestselling book or a huge event',fact:'🎬 You create experiences! Content creators today earn millions.'},
+      b:{emoji:'🎮',text:'A popular game, a useful website or your own robot',fact:'🎮 You are a tech genius! The gaming market in 2024 exceeded $200 billion.'}}
+  ]
+};
+
+const results = {
+  uk: {
+    creative:{icon:'🎨',title:'Зірка Творчості',cls:'res-creative',badge:'✨ Художник душею',badgeBg:'rgba(167,139,250,.25)',badgeColor:'#c4b5fd',desc:'Ти — художник, оповідач, натхненник! Твій світ — у словах, кольорах та ідеях. Ти бачиш красу там, де інші її не помічають.',courses:['Діджитал маркетинг','Анімація','Кібербезпека','Mental boost','Літня школа']},
+    tech:{icon:'🔬',title:'Зірка Технологій',cls:'res-tech',badge:'⚡ Інноватор майбутнього',badgeBg:'rgba(52,211,153,.25)',badgeColor:'#6ee7b7',desc:'Ти — інноватор, мислитель, будівник! Тебе захоплюють технології та розв\'язання складних задач. Майбутнє за тобою!',courses:['JAVA_BASIC','PYTHON в дії','Креативний кодинг','AI LITERACY','JAVASE21_PRO','FrontEnd Dev','Літня школа']},
+    leader:{icon:'🌍',title:'Зірка Лідерства',cls:'res-leader',badge:'👑 Народжений лідер',badgeBg:'rgba(96,165,250,.25)',badgeColor:'#93c5fd',desc:'Ти — організатор, командний гравець, лідер! Умієш об\'єднувати людей навколо спільної мети і вести за собою.',courses:['Фріланс','Mental boost','Літня школа']},
+    universe:{icon:'💫',title:'Зірка Всесвіту',cls:'res-universe',badge:'🌈 Мультиталант',badgeBg:'rgba(251,191,36,.25)',badgeColor:'#fcd34d',desc:'Ти — унікальна мультиталановита особистість! Тобі цікаво все: і творчість, і технології. Це — справжня суперсила!',courses:['Будь-який за власним вибором']}
+  },
+  en: {
+    creative:{icon:'🎨',title:'Creative Star',cls:'res-creative',badge:'✨ Artist at Heart',badgeBg:'rgba(167,139,250,.25)',badgeColor:'#c4b5fd',desc:'You are an artist, storyteller and inspirer! Your world lives in words, colors and ideas. You see beauty where others miss it.',courses:['Digital Marketing','Animation','Cybersecurity','Mental Boost','Summer School']},
+    tech:{icon:'🔬',title:'Tech Star',cls:'res-tech',badge:'⚡ Future Innovator',badgeBg:'rgba(52,211,153,.25)',badgeColor:'#6ee7b7',desc:'You are an innovator, thinker and builder! Technology and problem-solving fascinate you. The future belongs to you!',courses:['JAVA_BASIC','PYTHON in Action','Creative Coding','AI LITERACY','JAVASE21_PRO','FrontEnd Dev','Summer School']},
+    leader:{icon:'🌍',title:'Leadership Star',cls:'res-leader',badge:'👑 Born Leader',badgeBg:'rgba(96,165,250,.25)',badgeColor:'#93c5fd',desc:'You are an organizer, team player and leader! You know how to unite people around a common goal and inspire them forward.',courses:['Freelance','Mental Boost','Summer School']},
+    universe:{icon:'💫',title:'Universe Star',cls:'res-universe',badge:'🌈 Multi-Talent',badgeBg:'rgba(251,191,36,.25)',badgeColor:'#fcd34d',desc:'You are a uniquely multi-talented person! You are curious about everything: creativity and technology alike. That is your true superpower!',courses:['Any course of your choice']}
+  }
+};
+
+let lang='uk', current=0, countA=0, countB=0, itAnswer='', userData={}, busy=false;
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.display='none'});
+  const el=document.getElementById(id);
+  el.style.display='block';
+  setTimeout(()=>el.classList.add('active'),10);
+}
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+function setLang(l){
+  lang=l;
+  const t=T[l];
+  document.getElementById('intro-title').textContent=t.introTitle;
+  document.getElementById('intro-sub').innerHTML=t.introSub;
+  document.getElementById('intro-badges').innerHTML=t.badges.map(b=>`<span class="badge">${b}</span>`).join('');
+  show('form-screen');
+  applyFormLang();
+}
+
+function applyFormLang(){
+  const t=T[lang];
+  document.getElementById('form-title').textContent=t.formTitle;
+  document.getElementById('lbl-name').textContent=t.lblName;
+  document.getElementById('lbl-city').textContent=t.lblCity;
+  document.getElementById('lbl-phone').textContent=t.lblPhone;
+  document.getElementById('lbl-email').textContent=t.lblEmail;
+  document.getElementById('lbl-it').textContent=t.lblIt;
+  document.getElementById('f-name').placeholder=t.phName;
+  document.getElementById('f-city').placeholder=t.phCity;
+  document.getElementById('f-phone').placeholder=t.phPhone;
+  document.getElementById('f-email').placeholder=t.phEmail;
+  document.getElementById('err-name').textContent=t.errName;
+  document.getElementById('err-city').textContent=t.errCity;
+  document.getElementById('err-phone').textContent=t.errPhone;
+  document.getElementById('err-email').textContent=t.errEmail;
+  document.getElementById('err-it').textContent=t.errIt;
+  document.getElementById('form-btn').textContent=t.formBtn;
+  document.getElementById('it-options').innerHTML=t.itOpts.map((o,i)=>`<div class="it-opt" data-val="${t.itVals[i]}" onclick="selectIt(this)">${o}</div>`).join('');
+}
+
+function selectIt(el){
+  document.querySelectorAll('.it-opt').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+  itAnswer=el.dataset.val;
+  document.getElementById('err-it').classList.remove('show');
+}
+
+function submitForm(){
+  const t=T[lang];
+  const name=document.getElementById('f-name').value.trim();
+  const city=document.getElementById('f-city').value.trim();
+  const phone=document.getElementById('f-phone').value.trim();
+  const email=document.getElementById('f-email').value.trim();
+  const emailOk=email&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  document.getElementById('err-name').classList.toggle('show',!name);
+  document.getElementById('err-city').classList.toggle('show',!city);
+  document.getElementById('err-phone').classList.toggle('show',!phone);
+  document.getElementById('err-email').classList.toggle('show',!emailOk);
+  document.getElementById('err-it').classList.toggle('show',!itAnswer);
+  if(!name||!city||!phone||!emailOk||!itAnswer)return;
+  userData={name,city,phone,email,itAnswer,lang};
+  startGame();
+}
+
+function buildDots(){
+  document.getElementById('dots').innerHTML=questions[lang].map((_,i)=>`<div class="dot" id="dot-${i}"></div>`).join('');
+}
+function updateDots(){
+  questions[lang].forEach((_,i)=>{
+    const d=document.getElementById('dot-'+i);
+    if(!d)return;
+    d.className='dot'+(i<current?' done':i===current?' active':'');
+  });
+}
+
+function startGame(){
+  current=0;countA=0;countB=0;
+  buildDots(); renderQuestion(); show('quiz');
+}
+
+function renderQuestion(){
+  const q=questions[lang][current];
+  const t=T[lang];
+  document.getElementById('q-emoji').textContent=q.emoji;
+  document.getElementById('q-text').textContent=q.text;
+  document.getElementById('q-count').textContent=(current+1)+' / 7';
+  document.getElementById('progress').style.width=((current/7)*100)+'%';
+  document.getElementById('fun-fact').className='fun-fact';
+  const opts=document.getElementById('options');
+  opts.className='options';
+  opts.style.animation='slideIn .3s ease';
+  opts.innerHTML=`
+    <button class="opt-btn" onclick="answer('a',this.parentElement)">
+      <span class="opt-emoji">${q.a.emoji}</span>
+      <span class="opt-content"><div class="opt-label">${t.optA}</div><div class="opt-text">${q.a.text}</div></span>
+      <span class="check-icon">✅</span>
+    </button>
+    <button class="opt-btn" onclick="answer('b',this.parentElement)">
+      <span class="opt-emoji">${q.b.emoji}</span>
+      <span class="opt-content"><div class="opt-label">${t.optB}</div><div class="opt-text">${q.b.text}</div></span>
+      <span class="check-icon">✅</span>
+    </button>`;
+  updateDots();
+}
+
+function answer(choice,container){
+  if(busy)return; busy=true;
+  if(choice==='a')countA++; else countB++;
+  container.querySelectorAll('.opt-btn').forEach((btn,i)=>{
+    btn.disabled=true;
+    if((i===0&&choice==='a')||(i===1&&choice==='b'))btn.classList.add('selected');
+  });
+  container.classList.add('answered');
+  const ff=document.getElementById('fun-fact');
+  ff.textContent=questions[lang][current][choice].fact;
+  ff.classList.add('show');
+  setTimeout(()=>{
+    current++; busy=false;
+    if(current<7)renderQuestion(); else showResult();
+  },8000);
+}
+
+function showResult(){
+  const t=T[lang];
+  document.getElementById('progress').style.width='100%';
+  updateDots();
+  let type;
+  if(countA>=5)type='creative';
+  else if(countB>=5)type='tech';
+  else if(countA===countB)type='universe';
+  else type='leader';
+  const r=results[lang][type];
+  const card=document.getElementById('result-card');
+  card.className='result-card '+r.cls;
+  document.getElementById('res-icon').textContent=r.icon;
+  document.getElementById('res-title').textContent=r.title;
+  const badge=document.getElementById('res-badge');
+  badge.textContent=r.badge; badge.style.background=r.badgeBg; badge.style.color=r.badgeColor;
+  document.getElementById('res-desc').textContent=r.desc;
+  document.getElementById('res-score').textContent=t.scoreText(countA,countB);
+  document.getElementById('courses-label').textContent=t.coursesLabel;
+  document.getElementById('res-courses').innerHTML=r.courses.map(c=>`<span class="course-tag">${c}</span>`).join('');
+  document.getElementById('copy-btn').textContent=t.copyBtn;
+  document.getElementById('restart-btn').textContent=t.restartBtn;
+  show('result');
+  sendToSheet({...userData,result:r.title,countA,countB,timestamp:new Date().toLocaleString('uk-UA')});
+}
+
+async function sendToSheet(data){
+  try{await fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})}
+  catch(e){console.warn('Sheet:',e)}
+}
+
+function copyResult(){
+  const t=T[lang];
+  const text=`🌟 ${lang==='uk'?'Гра «Яка ти зірка?»':'What\'s Your Star? Game'}\n`+(userData.name?userData.name+' — ':'')+document.getElementById('res-title').textContent+'\n'+document.getElementById('res-desc').textContent;
+  navigator.clipboard.writeText(text).then(()=>showToast(t.copied)).catch(()=>showToast(t.copyFail));
+}
+
+function restartGame(){
+  itAnswer=''; userData={};
+  document.querySelectorAll('.it-opt').forEach(o=>o.classList.remove('selected'));
+  ['f-name','f-city','f-phone','f-email'].forEach(id=>document.getElementById(id).value='');
+  show('intro');
+}
+</script>
+</body>
+</html>
